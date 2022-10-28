@@ -1,41 +1,28 @@
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
-using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 using Mvc.SourceGen.Web.Controllers;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
-namespace Microsoft.Extensions.DependencyInjection;
-
-public static class ServiceCollectionExtensions
+internal class SourceGenApplicationPart : ApplicationPart, IApplicationPartTypeProvider
 {
-    public static IMvcBuilder AddSourceGenControllers(this IServiceCollection services)
-    {
-        var manager = new ApplicationPartManager();
-        manager.ApplicationParts.Add(new SourceGenApplicationPart());
-
-        services.AddSingleton(manager);
-
-        return services.AddControllers();
-    }
-}
-
-public partial class SourceGenApplicationPart : ApplicationPart, IApplicationPartTypeProvider
-{ 
     private readonly static TypeInfo[] _types;
 
     static SourceGenApplicationPart()
-    {        
-        _types = new TypeInfo[1] 
+    {
+        _types = new TypeInfo[1]
         {
-            typeof(HelloController).GetTypeInfo()
+           GetTypeInfo<HelloController>()
         };
     }
+
+    internal static TypeInfo GetTypeInfo<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)] T>()
+        => typeof(T).GetTypeInfo();
 
     /// <summary>
     /// Gets the name of the <see cref="ApplicationPart"/>.
     /// </summary>
     public override string Name => "Mvc.SourceGen"!;
- 
+
     /// <inheritdoc />
     public IEnumerable<TypeInfo> Types => _types;
 }
-

@@ -12,11 +12,7 @@
 
     <!-- include app code -->
     <TrimMode>full</TrimMode>
+    <UserSecretsId>b45386aa-536b-47e3-a8ea-f4b2f27c1b6c</UserSecretsId>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0-alpha.1.22525.3" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
-  </ItemGroup>
 
 </Project>
