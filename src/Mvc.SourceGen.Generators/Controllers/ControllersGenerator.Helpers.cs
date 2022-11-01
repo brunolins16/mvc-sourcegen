@@ -1,4 +1,4 @@
-﻿namespace Mvc.SourceGen.Generator;
+﻿namespace Mvc.SourceGen.Generators;
 
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis;

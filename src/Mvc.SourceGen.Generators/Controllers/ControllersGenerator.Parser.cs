@@ -1,4 +1,4 @@
-﻿namespace Mvc.SourceGen.Generator;
+﻿namespace Mvc.SourceGen.Generators;
 
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis;
@@ -75,7 +75,7 @@ public sealed partial class ControllersGenerator
                     }
 
                     if (hasNonControllerAttribute ||
-                        (!hasControllerAttribute && !hasApiControllerAttribute && !controllerSymbol.Name.EndsWith("ControllerTypeNameSuffix", StringComparison.OrdinalIgnoreCase)))
+                        (!hasControllerAttribute && !hasApiControllerAttribute && !controllerSymbol.Name.EndsWith("Controller", StringComparison.OrdinalIgnoreCase)))
                     {
                         continue;
                     }

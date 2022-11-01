@@ -1,6 +1,7 @@
-﻿namespace Mvc.SourceGen.Generator;
+﻿namespace Mvc.SourceGen.Generators;
 
 using Microsoft.CodeAnalysis;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
@@ -20,17 +21,18 @@ public sealed partial class ControllersGenerator
 
         public void Emit()
         {
+            EmitExtensionMethod();
+
             var content = new StringBuilder();
 
             content.AppendLine("using Microsoft.AspNetCore.Mvc.ApplicationParts;");
-            content.AppendLine("using Mvc.SourceGen.Web.Controllers;");
             content.AppendLine("using System.Diagnostics.CodeAnalysis;");
             content.AppendLine("using System.Reflection;");
 
-            content.AppendLine("namespace Mvc.SourceGen.Web;");
+            content.AppendLine("namespace Mvc.SourceGen;");
 
-           
-            content.AppendLine("public partial class SourceGenApplicationPart : IApplicationPartTypeProvider");
+
+            content.AppendLine("internal class SourceGenApplicationPart : ApplicationPart, IApplicationPartTypeProvider");
             content.AppendLine("{");
             content.AppendLine("    private readonly static TypeInfo[] _types;");
             content.AppendLine("");
@@ -44,17 +46,40 @@ public sealed partial class ControllersGenerator
 
             foreach (var type in _spec.ControllerTypes)
             {
-                content.AppendLine($"    GetTypeInfo<{type.MetadataName}>(),");
+                content.AppendLine($"    GetTypeInfo<{type.ToDisplayString()}>(),");
             }
-            
+
             content.AppendLine("        };");
             content.AppendLine("    }");
             content.AppendLine("");
             content.AppendLine("    /// <inheritdoc />");
             content.AppendLine("    public IEnumerable<TypeInfo> Types => _types;");
+            content.AppendLine("    /// <inheritdoc />");
+            content.AppendLine("    public override string Name => \"Mvc.SourceGen\"!;");
             content.AppendLine("}");
 
             _context.AddSource("SourceGenApplicationPart.g.cs", content.ToString());
+        }
+
+        private void EmitExtensionMethod()
+        {
+
+            var content = new StringBuilder();
+
+            content.AppendLine("            namespace Microsoft.Extensions.DependencyInjection;");
+            content.AppendLine("");
+            content.AppendLine("            using Mvc.SourceGen;");
+            content.AppendLine("");
+            content.AppendLine("            internal static class SourceGenMvcBuilderExtensions");
+            content.AppendLine("            {");
+            content.AppendLine("                public static IMvcBuilder AddSourceGenControllers(this IMvcBuilder builder)");
+            content.AppendLine("                {");
+            content.AppendLine("                    return builder.ConfigureApplicationPartManager(appPartManager");
+            content.AppendLine("                        => appPartManager.ApplicationParts.Add(new SourceGenApplicationPart()));");
+            content.AppendLine("                }");
+            content.AppendLine("            }");
+
+            _context.AddSource("SourceGenMvcBuilderExtensions.g.cs", content.ToString());
         }
     }
 }

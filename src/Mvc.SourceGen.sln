@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mvc.SourceGen.Web", "Mvc.SourceGen.Web\Mvc.SourceGen.Web.csproj", "{0D58FB80-365F-459A-862C-B773636E4741}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mvc.SourceGen.Generator", "Mvc.SourceGen.Generator\Mvc.SourceGen.Generator.csproj", "{5DAFE089-6FB9-4FC3-9C47-EB9A22435A6D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mvc.SourceGen.Generators", "Mvc.SourceGen.Generators\Mvc.SourceGen.Generators.csproj", "{5DAFE089-6FB9-4FC3-9C47-EB9A22435A6D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
