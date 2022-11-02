@@ -7,8 +7,8 @@ namespace Mvc.SourceGen.Web.Controllers;
 public class HelloController : ControllerBase
 {
     [HttpGet(Name = "SayHello")]
-    public string Get()
+    public string Get(string? name)
     {
-        return "Hello World";
+        return $"Hello World, {name}";
     }
 }
