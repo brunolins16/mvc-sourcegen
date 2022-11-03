@@ -1,4 +1,7 @@
+using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Text.Json.Serialization;
+using Mvc.SourceGen.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,22 +10,10 @@ builder.Services
     .AddControllers()
     .AddSourceGenControllers();
 
+builder.Services.AddSingleton<IModelMetadataProvider, SourceGenModelMetadataProvider>();
+
 var app = builder.Build();
 
 app.MapControllers();
 
 app.Run();
-
-
-record Person(string Name);
-record Person2(string Name);
-record Person3(string Name);
-
-
-[JsonSerializable(typeof(Person))]
-[JsonSerializable(typeof(Person2))]
-[JsonSerializable(typeof(Person3))]
-partial class SampleContext : JsonSerializerContext
-{
-
-}

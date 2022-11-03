@@ -7,8 +7,19 @@ namespace Mvc.SourceGen.Web.Controllers;
 public class HelloController : ControllerBase
 {
     [HttpGet(Name = "SayHello")]
-    public string Get(string? name)
+    public string SayHello([FromQuery] Message message)
     {
-        return $"Hello World, {name}";
+        return message.ToString();
+    }
+}
+
+public class Message
+{
+    public string Text { get; set; }
+    public string? Name { get; set; }
+
+    public override string ToString()
+    {
+        return $"{Name ?? "unknown"} says: {Text}";
     }
 }
