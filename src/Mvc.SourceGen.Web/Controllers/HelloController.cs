@@ -11,6 +11,13 @@ public class HelloController : ControllerBase
     {
         return message.ToString();
     }
+
+    // TODO: No working yet
+    [HttpGet("json", Name = "SayHelloJson")]
+    public IActionResult SayHelloJson([FromQuery] Message message)
+    {
+        return Ok(new MessageResponse() { Text = message.ToString() });
+    }
 }
 
 public class Message
@@ -22,4 +29,9 @@ public class Message
     {
         return $"{Name ?? "unknown"} says: {Text}";
     }
+}
+
+public class MessageResponse
+{
+    public required string Text { get; init; }
 }
