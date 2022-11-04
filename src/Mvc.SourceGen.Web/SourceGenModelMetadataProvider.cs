@@ -5,16 +5,10 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.Extensions.Options;
 using Mvc.SourceGen.Web.Controllers;
-using System;
-using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 
 public class SourceGenModelMetadataProvider : DefaultModelMetadataProvider
 {
-    private readonly ConcurrentDictionary<ModelMetadataIdentity, ModelMetadataCacheEntry> _modelMetadataCache = new();
-    private readonly Func<ModelMetadataIdentity, ModelMetadataCacheEntry> _cacheEntryFactory;
-
     /// <summary>
     /// Creates a new <see cref="DefaultModelMetadataProvider"/>.
     /// </summary>
@@ -22,7 +16,6 @@ public class SourceGenModelMetadataProvider : DefaultModelMetadataProvider
     public SourceGenModelMetadataProvider(ICompositeMetadataDetailsProvider detailsProvider)
         : base(detailsProvider)
     {
-        _cacheEntryFactory = CreateCacheEntry;
     }
 
     /// <summary>
@@ -35,78 +28,54 @@ public class SourceGenModelMetadataProvider : DefaultModelMetadataProvider
         IOptions<MvcOptions> optionsAccessor)
         : base(detailsProvider, optionsAccessor)
     {
-        _cacheEntryFactory = CreateCacheEntry;
     }
 
-    internal void ClearCache() => _modelMetadataCache.Clear();
-
-    /// <inheritdoc />
-    public override ModelMetadata GetMetadataForParameter(ParameterInfo parameter, Type modelType)
+    protected override ModelMetadata CreateModelMetadata(DefaultMetadataDetails entry)
     {
-        if (parameter == null)
+        if (entry.Key.ModelType == typeof(Message))
         {
-            throw new ArgumentNullException(nameof(parameter));
+            return new MessageModelMetadata(this, DetailsProvider, entry, ModelBindingMessageProvider);
         }
 
-        if (modelType == null)
+        if (entry.Key.ModelType == typeof(MessageV2))
         {
-            throw new ArgumentNullException(nameof(modelType));
+            return new MessageV2ModelMetadata(this, DetailsProvider, entry, ModelBindingMessageProvider);
         }
 
-
-        if (parameter.ParameterType == typeof(Message))
-        {
-            return GetCacheEntry(parameter, typeof(Message)).Metadata;
-        }
-        else
-        {
-            throw new InvalidOperationException($"Type {modelType.FullName} not supported");
-        }
+        return base.CreateModelMetadata(entry);
     }
+}
 
-    // TODO: Define the right member types that we need to access
-    private ModelMetadataCacheEntry GetCacheEntry(ParameterInfo parameter, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type modelType)
+// TODO: We should implement source generate a model metadata for all discovered types
+internal class MessageModelMetadata : ModelMetadata<Message>
+{
+    public MessageModelMetadata(
+        IModelMetadataProvider provider, 
+        ICompositeMetadataDetailsProvider detailsProvider, 
+        DefaultMetadataDetails details, 
+        DefaultModelBindingMessageProvider modelBindingMessageProvider) : base(provider, detailsProvider, details, modelBindingMessageProvider)
     {
-        return _modelMetadataCache.GetOrAdd(
-            ModelMetadataIdentity.ForParameter(parameter, modelType),
-            _cacheEntryFactory);
     }
+}
 
-    private ModelMetadataCacheEntry CreateCacheEntry(ModelMetadataIdentity key)
+internal class MessageV2ModelMetadata : ModelMetadata<MessageV2>
+{
+    public MessageV2ModelMetadata(
+        IModelMetadataProvider provider,
+        ICompositeMetadataDetailsProvider detailsProvider,
+        DefaultMetadataDetails details,
+        DefaultModelBindingMessageProvider modelBindingMessageProvider) : base(provider, detailsProvider, details, modelBindingMessageProvider)
     {
-        DefaultMetadataDetails details;
-
-        //if (key.MetadataKind == ModelMetadataKind.Constructor)
-        //{
-        //    details = CreateConstructorDetails(key);
-        //}
-        if (key.MetadataKind == ModelMetadataKind.Parameter)
-        {
-            details = CreateParameterDetails(key);
-        }
-        //else if (key.MetadataKind == ModelMetadataKind.Property)
-        //{
-        //    details = CreateSinglePropertyDetails(key);
-        //}
-        else
-        {
-            details = CreateTypeDetails(key);
-        }
-
-        var metadata = CreateModelMetadata(details);
-        return new ModelMetadataCacheEntry(metadata, details);
     }
+}
 
-    private readonly struct ModelMetadataCacheEntry
+public class ModelMetadata<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> : DefaultModelMetadata
+{
+    public ModelMetadata(
+        IModelMetadataProvider provider, 
+        ICompositeMetadataDetailsProvider detailsProvider, 
+        DefaultMetadataDetails details, 
+        DefaultModelBindingMessageProvider modelBindingMessageProvider) : base(provider, detailsProvider, details, modelBindingMessageProvider)
     {
-        public ModelMetadataCacheEntry(ModelMetadata metadata, DefaultMetadataDetails details)
-        {
-            Metadata = metadata;
-            Details = details;
-        }
-
-        public ModelMetadata Metadata { get; }
-
-        public DefaultMetadataDetails Details { get; }
     }
 }

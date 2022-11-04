@@ -12,11 +12,25 @@ public class HelloController : ControllerBase
         return message.ToString();
     }
 
+    [HttpGet("record", Name = "SayHelloRecord")]
+    public string SayHelloJson([FromQuery] MessageV2 message)
+    {
+        return message.ToString();
+    }
+
     // TODO: No working yet
     [HttpGet("json", Name = "SayHelloJson")]
     public IActionResult SayHelloJson([FromQuery] Message message)
     {
         return Ok(new MessageResponse() { Text = message.ToString() });
+    }
+}
+
+public record MessageV2(string Text, string? Name)
+{
+    public override string ToString()
+    {
+        return $"{Name ?? "unknown"} says: {Text}";
     }
 }
 
