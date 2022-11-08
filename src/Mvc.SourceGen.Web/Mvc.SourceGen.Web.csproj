@@ -17,9 +17,8 @@
 
 
 	<ItemGroup>
-		<ProjectReference Include="..\Mvc.SourceGen.Generators\Mvc.SourceGen.Generators.csproj"
-						  OutputItemType="Analyzer"
-						  ReferenceOutputAssembly="false" />
+		<ProjectReference Include="..\Mvc.SourceGen.Generators\Mvc.SourceGen.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<ProjectReference Include="..\Mvc.SourceGen\Mvc.SourceGen.csproj" />
 	</ItemGroup>
 
 

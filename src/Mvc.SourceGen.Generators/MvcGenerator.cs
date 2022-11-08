@@ -5,13 +5,13 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
 
 [Generator(LanguageNames.CSharp)]
-public sealed partial class ControllersGenerator : IIncrementalGenerator
+public sealed partial class MvcGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var parameterDeclarations = context.SyntaxProvider
-                .CreateSyntaxProvider(static (s, _) => ControllersGenerator.IsSyntaxTargetForPublicTypes(s),
-               static (ctx, _) => ControllersGenerator.GetSemanticTargetForControllersType(ctx))
+                .CreateSyntaxProvider(static (s, _) => MvcGenerator.IsSyntaxTargetForPublicTypes(s),
+               static (ctx, _) => MvcGenerator.GetSemanticTargetForControllersType(ctx))
            .Where(static m => m is not null)
            .Collect();
 
@@ -29,7 +29,7 @@ public sealed partial class ControllersGenerator : IIncrementalGenerator
         //    System.Diagnostics.Debugger.Launch();
         //}
 
-        var parser = new Parser(context, compilation);
+        var parser = new Parser(compilation);
         var spec = parser.Parse(typeSyntaxes);
 
         var emitter = new Emitter(context, spec);
