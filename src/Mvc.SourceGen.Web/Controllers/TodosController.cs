@@ -13,20 +13,9 @@ public class TodosController : ControllerBase
     public IEnumerable<Todo> GetAll() 
         => Todos;
 
-    [HttpGet("{id}")]
-    public IActionResult GetById(string id)
-    {
-        var  lookUpId = $"#{id}";
-
-        var todo = Todos.SingleOrDefault(x => x.Id == lookUpId);
-        return todo is null ? NotFound() : Ok(todo);
-    }
-
     [HttpPost]
     public IActionResult Add(Todo todo)
     {
-        todo.Id = $"#{Todos.Count + 1}";
-
         Todos.Add(todo);
 
         //  System.InvalidOperationException: No route matches the supplied values.

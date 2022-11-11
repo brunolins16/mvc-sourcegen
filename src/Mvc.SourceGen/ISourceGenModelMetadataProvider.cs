@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 public interface ISourceGenModelMetadataProvider
 {
+    //TODO: Add notnullwhen
     bool TryCreateModelMetadata(
         DefaultMetadataDetails entry,
         IModelMetadataProvider provider,

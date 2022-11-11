@@ -18,11 +18,11 @@ app.MapControllers();
 app.Run();
 
 
-[JsonSerializable(typeof(MessageResponse))]
-[JsonSerializable(typeof(Message))]
-[JsonSerializable(typeof(IEnumerable<Message>))]
-[JsonSerializable(typeof(Message?[]))]
-[JsonSerializable(typeof(MessageRef))]
+//[JsonSerializable(typeof(MessageResponse))]
+//[JsonSerializable(typeof(Message))]
+//[JsonSerializable(typeof(IEnumerable<Message>))]
+//[JsonSerializable(typeof(Message?[]))]
+//[JsonSerializable(typeof(MessageRef))]
 // Todo Types
 [JsonSerializable(typeof(List<Todo>))]
 [JsonSerializable(typeof(Todo))]
