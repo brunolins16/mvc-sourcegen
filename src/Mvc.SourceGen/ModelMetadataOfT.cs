@@ -1,15 +1,24 @@
 ﻿namespace Mvc.SourceGen;
 
-using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using System.Diagnostics.CodeAnalysis;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Collections.Generic;
-using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 
-public abstract class ModelMetadata<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties)] T> : DefaultModelMetadata
+public interface ITypedModelMetadata
+{
+    IModelBinder? CreateModelBinder(ModelBinderProviderContext context);
+}
+
+public abstract class ModelMetadata<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T> : DefaultModelMetadata, ITypedModelMetadata
 {
     private ModelMetadata? _constructor;
     private bool _constructorInit;
+    private IModelBinder? _modelBinder;
 
     private ModelMetadata[]? _propertiesCache;
     private ModelPropertyCollection? _propertyCollection;
@@ -85,4 +94,13 @@ public abstract class ModelMetadata<[DynamicallyAccessedMembers(DynamicallyAcces
         return new DefaultModelMetadata(_provider, _detailsProvider, constrDetails, _modelBindingMessageProvider);
     }
 
+    public IModelBinder? CreateModelBinder(ModelBinderProviderContext context)
+    {
+        var loggerFactory = context.Services.GetRequiredService<ILoggerFactory>();
+        var mvcOptions = context.Services.GetRequiredService<IOptions<MvcOptions>>().Value;
+
+        return CreateModelBinder(context, loggerFactory, mvcOptions);
+    }
+
+    protected virtual IModelBinder? CreateModelBinder(ModelBinderProviderContext context, ILoggerFactory loggerFactory, MvcOptions options) => null;
 }

@@ -6,8 +6,25 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
+	<PropertyGroup Label="PackageInfo">
+		<PackageVersion>1.0.4</PackageVersion>
+		<PackageDescription>MVC Source Generator Base libraries</PackageDescription>
+		<Authors>Bruno Oliveira</Authors>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<!-- We need a private version -->
+	<ItemGroup>
+		<Reference Include="Microsoft.AspNetCore.Mvc.Abstractions">
+			<HintPath>..\..\private-bin\Microsoft.AspNetCore.Mvc.Abstractions.dll</HintPath>
+		</Reference>
+		<Reference Include="Microsoft.AspNetCore.Mvc.Core">
+			<HintPath>..\..\private-bin\Microsoft.AspNetCore.Mvc.Core.dll</HintPath>
+		</Reference>
 	</ItemGroup>
 
 </Project>

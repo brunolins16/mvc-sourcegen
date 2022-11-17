@@ -1,8 +1,7 @@
 ﻿namespace Mvc.SourceGen;
 
-using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using System.Diagnostics.CodeAnalysis;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 
 public interface ISourceGenModelMetadataProvider
 {

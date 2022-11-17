@@ -1,11 +1,9 @@
 ﻿namespace Mvc.SourceGen;
 
-using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.Extensions.Options;
-using System.Collections.Generic;
-using System;
 
 internal class SourceGenModelMetadataProvider : DefaultModelMetadataProvider
 {

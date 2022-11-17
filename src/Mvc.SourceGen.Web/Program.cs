@@ -1,7 +1,5 @@
-using System.Collections.Generic;
-using System.Text.Json.Serialization;
-using Mvc.SourceGen.Web.Controllers;
 using Mvc.SourceGen.Web.Models;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 

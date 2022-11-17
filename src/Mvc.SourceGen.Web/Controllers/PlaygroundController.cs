@@ -6,7 +6,6 @@
 //using Mvc.SourceGen.Web.Models;
 //using System.Reflection;
 //using System.Reflection.Metadata;
-//using Microsoft.AspNetCore.DataProtection.KeyManagement;
 
 //[ApiController]
 //[Route("[controller]")]
@@ -132,47 +131,4 @@
 //public class MessageResponse
 //{
 //    public string Text { get; init; }
-//}
-
-
-//public class MvcSourceGenWebControllersMessageV2ModelMetadata : ModelMetadata<Mvc.SourceGen.Web.Controllers.MessageV2>
-//{
-
-//    private readonly ISourceGenModelMetadataProvider applicationModelMetadataProvider;
-//    private readonly IModelMetadataProvider provider;
-//    private readonly ICompositeMetadataDetailsProvider detailsProvider;
-//    private readonly DefaultModelBindingMessageProvider modelBindingMessageProvider;
-
-//    public MvcSourceGenWebControllersMessageV2ModelMetadata(
-//        ISourceGenModelMetadataProvider applicationModelMetadataProvider,
-//        IModelMetadataProvider provider,
-//        ICompositeMetadataDetailsProvider detailsProvider,
-//        DefaultMetadataDetails details,
-//        DefaultModelBindingMessageProvider modelBindingMessageProvider) : base(applicationModelMetadataProvider, provider, detailsProvider, details, modelBindingMessageProvider)
-//    {
-//        this.applicationModelMetadataProvider = applicationModelMetadataProvider;
-//        this.provider = provider;
-//        this.detailsProvider = detailsProvider;
-//        this.modelBindingMessageProvider = modelBindingMessageProvider;
-//    }
-
-//    protected override ModelMetadata? CtorInit() 
-//        => CtorInit(   
-//            new[] { typeof(string), typeof(string) },
-//            static (args) => new MessageV2(Text: (string)args[0]!, Name: (string?)args[1]));
-
-//    protected override ModelMetadata[] PropertiesInit()
-//    {
-//        var propertyInfo0 = typeof(Mvc.SourceGen.Web.Controllers.MessageV2).GetProperty("Text");
-//        var propertyInfo0_key = ModelMetadataIdentity.ForProperty(propertyInfo0, typeof(string), typeof(Mvc.SourceGen.Web.Controllers.MessageV2));
-//        var propertyInfo0_attributes = ModelAttributes.GetAttributesForProperty(typeof(Mvc.SourceGen.Web.Controllers.MessageV2), propertyInfo0, typeof(string));
-//        var propertyInfo0_entry = new DefaultMetadataDetails(propertyInfo0_key, propertyInfo0_attributes)
-//        { PropertyGetter = static (obj) => ((Mvc.SourceGen.Web.Controllers.MessageV2)obj).Text!, PropertySetter = static (obj, value) => throw new InvalidOperationException("Readonly property") };
-//        var propertyInfo1 = typeof(Mvc.SourceGen.Web.Controllers.MessageV2).GetProperty("Name");
-//        var propertyInfo1_key = ModelMetadataIdentity.ForProperty(propertyInfo1, typeof(string), typeof(Mvc.SourceGen.Web.Controllers.MessageV2));
-//        var propertyInfo1_attributes = ModelAttributes.GetAttributesForProperty(typeof(Mvc.SourceGen.Web.Controllers.MessageV2), propertyInfo1, typeof(string));
-//        var propertyInfo1_entry = new DefaultMetadataDetails(propertyInfo1_key, propertyInfo1_attributes)
-//        { PropertyGetter = static (obj) => ((Mvc.SourceGen.Web.Controllers.MessageV2)obj).Name!, PropertySetter = static (obj, value) => throw new InvalidOperationException("Readonly property") };
-//        return new[] { CreateMetadata(propertyInfo0_entry), CreateMetadata(propertyInfo1_entry) };
-//    }
 //}

@@ -22,4 +22,14 @@
 	</ItemGroup>
 
 
+	<ItemGroup>
+	  <Reference Include="Microsoft.AspNetCore.Mvc.Abstractions">
+	    <HintPath>..\..\private-bin\Microsoft.AspNetCore.Mvc.Abstractions.dll</HintPath>
+	  </Reference>
+	  <Reference Include="Microsoft.AspNetCore.Mvc.Core">
+	    <HintPath>..\..\private-bin\Microsoft.AspNetCore.Mvc.Core.dll</HintPath>
+	  </Reference>
+	</ItemGroup>
+
+
 </Project>

@@ -9,11 +9,13 @@ public sealed partial class MvcGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var parameterDeclarations = context.SyntaxProvider
+#pragma warning disable CS8619 // Nullability of reference types in value doesn't match target type.
+        IncrementalValueProvider<ImmutableArray<ClassDeclarationSyntax>> parameterDeclarations = context.SyntaxProvider
                 .CreateSyntaxProvider(static (s, _) => MvcGenerator.IsSyntaxTargetForPublicTypes(s),
                static (ctx, _) => MvcGenerator.GetSemanticTargetForControllersType(ctx))
            .Where(static m => m is not null)
            .Collect();
+#pragma warning restore CS8619 // Nullability of reference types in value doesn't match target type.
 
         var compilationAndClasses =
             context.CompilationProvider.Combine(parameterDeclarations);

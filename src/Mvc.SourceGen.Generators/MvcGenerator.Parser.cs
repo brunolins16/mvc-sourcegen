@@ -1,13 +1,15 @@
 ﻿namespace Mvc.SourceGen.Generators;
 
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Mvc.SourceGen.Generators.Extensions;
+using Roslyn.Reflection;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System;
 using System.Reflection;
-using Roslyn.Reflection;
 
 public sealed partial class MvcGenerator
 {
@@ -15,17 +17,22 @@ public sealed partial class MvcGenerator
     {
         private readonly MetadataLoadContext _metadataLoadContext;
         private readonly Compilation _compilation;
-
+        private readonly Type _objectType;
+        private readonly Type _ienumerableType;
+        private readonly Type _icollectionType;
         private readonly Type _nonControllerAttributeType;
         private readonly Type _controllerAttributeType;
         private readonly Type _apiControllerAttributeType;
-        private readonly Type _nonActionAttributeType;        
+        private readonly Type _nonActionAttributeType;
 
         public Parser(Compilation compilation)
         {
-            _metadataLoadContext  = new MetadataLoadContext(compilation);
+            _metadataLoadContext = new MetadataLoadContext(compilation);
             _compilation = compilation;
 
+            _objectType = _metadataLoadContext.ResolveType<object>();
+            _ienumerableType = _metadataLoadContext.ResolveType<IEnumerable>();
+            _icollectionType = _metadataLoadContext.ResolveType<ICollection>();
             _nonControllerAttributeType = _metadataLoadContext.ResolveType("Microsoft.AspNetCore.Mvc.NonControllerAttribute");
             _controllerAttributeType = _metadataLoadContext.ResolveType("Microsoft.AspNetCore.Mvc.ControllerAttribute");
             _apiControllerAttributeType = _metadataLoadContext.ResolveType("Microsoft.AspNetCore.Mvc.ApiControllerAttribute");
@@ -35,8 +42,8 @@ public sealed partial class MvcGenerator
 
         internal SourceGenerationSpec Parse(ImmutableArray<ClassDeclarationSyntax> candidateClassDeclarations)
         {
-            List<INamedTypeSymbol> controllerTypes = new();
-            var modelTypes = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+            var controllerTypes = new Dictionary<INamedTypeSymbol, SourceGenerationActionMethodSpec[]?>(SymbolEqualityComparer.Default);
+            var modelTypes = new HashSet<SourceGenerationModelSpec>(SourceGenerationModelSpecComparer.Default);
 
             foreach (IGrouping<SyntaxTree, ClassDeclarationSyntax> group in candidateClassDeclarations.GroupBy(c => c.SyntaxTree))
             {
@@ -54,19 +61,30 @@ public sealed partial class MvcGenerator
                         continue;
                     }
 
-                    // Add to the final list
-                    controllerTypes.Add(controllerSymbol);
-
                     var methods = controllerType.GetMethods(BindingFlags.Public | BindingFlags.Instance);
+                    List<SourceGenerationActionMethodSpec>? actionMethods = null;
 
                     foreach (var method in methods)
                     {
                         if (IsAction(method))
                         {
+                            actionMethods ??= new List<SourceGenerationActionMethodSpec>();
+
+                            var actionSpec = new SourceGenerationActionMethodSpec() { Method = method.GetMethodSymbol() };
+
+                            // TODO: Verify location
+                            if (actionSpec.Method.TryGetAwaiter(compilationSemanticModel, actionSpec.Method.Locations.First().SourceSpan.Start, out var awaiterMethod))
+                            {
+                                actionSpec.AwaiterType = awaiterMethod!.ReturnType;
+                                actionSpec.AsyncResultType = actionSpec.AwaiterType.GetAsyncResult();
+                            }
+
+                            actionMethods.Add(actionSpec);
+
                             var parameters = method.GetParameters();
 
                             foreach (var parameter in parameters)
-                            {                                
+                            {
                                 void AddType(Type type)
                                 {
                                     if (type.IsArray)
@@ -75,28 +93,40 @@ public sealed partial class MvcGenerator
                                         return;
                                     }
 
-                                    var symbol = type.GetTypeSymbol() as INamedTypeSymbol;
-                                    if (symbol.IsReferenceType)
+                                    if (type.GetTypeSymbol() is not INamedTypeSymbol symbol)
                                     {
-                                        symbol = symbol.WithNullableAnnotation(NullableAnnotation.None) as INamedTypeSymbol;
+                                        return;
                                     }
 
-                                    _ = modelTypes.Add(symbol);
-
-                                    if (type.IsPrimitive) 
+                                    if (symbol!.IsReferenceType)
                                     {
-                                       return;
+                                        symbol = (symbol.WithNullableAnnotation(NullableAnnotation.None) as INamedTypeSymbol)!;
                                     }
-                                    
+
                                     if (type.IsGenericType)
                                     {
-                                        foreach  (var genericType in type.GenericTypeArguments)
+                                        foreach (var genericType in type.GenericTypeArguments)
                                         {
                                             AddType(genericType);
                                         }
                                     }
 
-                                    //TODO: Perf issues 
+                                    var modelSpec = new SourceGenerationModelSpec()
+                                    {
+                                        Type = symbol!,
+                                        IsArray = type.IsArray,
+                                        IsCollection = _icollectionType.IsAssignableFrom(type),
+                                        IsIEnumerable = _ienumerableType.IsAssignableFrom(type)
+                                    };
+
+                                    _ = modelTypes.Add(modelSpec);
+
+                                    if (type.IsPrimitive || symbol.SpecialType != SpecialType.None || modelSpec.IsIEnumerable || _icollectionType.IsAssignableFrom(type))
+                                    {
+                                        return;
+                                    }
+
+                                    //TODO: Perf issues + Stackoverflow control 
                                     var properties = type.GetProperties();
                                     foreach (var property in properties)
                                     {
@@ -109,10 +139,13 @@ public sealed partial class MvcGenerator
 
                         }
                     }
+
+                    // Add to the final list
+                    controllerTypes[controllerSymbol!] = actionMethods?.ToArray();
                 }
             }
 
-            return new SourceGenerationSpec() { ControllerTypes = controllerTypes.ToArray(), ModelTypes = modelTypes.ToArray() };
+            return new SourceGenerationSpec() { ControllerTypes = controllerTypes, ModelTypes = modelTypes.ToArray() };
         }
 
         private bool IsAction(MethodInfo methodInfo)
@@ -162,12 +195,8 @@ public sealed partial class MvcGenerator
             }
 
             // Overridden methods from Object class, e.g. Equals(Object), GetHashCode(), etc., are not valid.
-            if (methodInfo.GetBaseDefinition().DeclaringType == typeof(object))
-            {
-                return false;
-            }            
-
-            return true;
+            return methodInfo.GetBaseDefinition().DeclaringType != _objectType
+                && methodInfo.DeclaringType != _objectType;
         }
 
         private bool IsController(Type typeInfo)
@@ -194,23 +223,19 @@ public sealed partial class MvcGenerator
                 return false;
             }
 
-            var attributes = typeInfo.GetCustomAttributesData();            
+            var attributes = typeInfo.GetCustomAttributesData();
             if (attributes.Any(t => t.AttributeType == _nonControllerAttributeType))
             {
                 return false;
             }
 
-            if (!typeInfo.Name.EndsWith("Controller", StringComparison.OrdinalIgnoreCase) &&
-                !attributes.Any(t => t.AttributeType == _controllerAttributeType || t.AttributeType == _apiControllerAttributeType))
-            {
-                return false;
-            }
-
-            return true;
+            return typeInfo.Name.EndsWith("Controller", StringComparison.OrdinalIgnoreCase) ||
+                attributes.Any(t => t.AttributeType == _controllerAttributeType || t.AttributeType == _apiControllerAttributeType);
         }
 
         private static bool IsIDisposableMethod(MethodInfo methodInfo)
         {
+            //TODO: Validate
             // Ideally we do not want Dispose method to be exposed as an action. However there are some scenarios where a user
             // might want to expose a method with name "Dispose" (even though they might not be really disposing resources)
             // Example: A controller deriving from MVC's Controller type might wish to have a method with name Dispose,

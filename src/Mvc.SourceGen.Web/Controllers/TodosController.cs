@@ -10,8 +10,15 @@ public class TodosController : ControllerBase
     private static readonly List<Todo> Todos = new();
 
     [HttpGet]
-    public IEnumerable<Todo> GetAll() 
+    public IEnumerable<Todo> GetAll()
         => Todos;
+
+    [HttpGet("delayed")]
+    public async Task<IEnumerable<Todo>> GetAllAsync()
+    {
+        await Task.Delay(1000);
+        return Todos;
+    }
 
     [HttpPost]
     public IActionResult Add(Todo todo)
@@ -24,4 +31,6 @@ public class TodosController : ControllerBase
 
         return Created("todos", todo);
     }
+
+    public IActionResult Add(List<Todo> todo) => Ok();
 }
