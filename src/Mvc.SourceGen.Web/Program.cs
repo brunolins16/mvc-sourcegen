@@ -1,4 +1,10 @@
+using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Mvc.SourceGen.Web.Models;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services
     .AddControllers()
     .AddJsonOptions(options => options.JsonSerializerOptions.AddContext<SourceGenJsonContext>())
-    .AddSourceGeneratorProviders();
+    .AddMvcContext();
 
 var app = builder.Build();
 

@@ -7,8 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mvc.SourceGen.Web", "Mvc.So
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mvc.SourceGen.Generators", "Mvc.SourceGen.Generators\Mvc.SourceGen.Generators.csproj", "{5DAFE089-6FB9-4FC3-9C47-EB9A22435A6D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mvc.SourceGen", "Mvc.SourceGen\Mvc.SourceGen.csproj", "{509859A1-2C66-41FA-B45B-C4C482AC7214}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,10 +21,6 @@ Global
 		{5DAFE089-6FB9-4FC3-9C47-EB9A22435A6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5DAFE089-6FB9-4FC3-9C47-EB9A22435A6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5DAFE089-6FB9-4FC3-9C47-EB9A22435A6D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{509859A1-2C66-41FA-B45B-C4C482AC7214}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{509859A1-2C66-41FA-B45B-C4C482AC7214}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{509859A1-2C66-41FA-B45B-C4C482AC7214}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{509859A1-2C66-41FA-B45B-C4C482AC7214}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

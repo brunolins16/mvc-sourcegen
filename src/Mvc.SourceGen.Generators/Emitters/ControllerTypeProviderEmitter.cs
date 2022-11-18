@@ -10,16 +10,6 @@ using System.Text;
 
 internal class ControllerTypeProviderEmitter : IEmitter
 {
-    public static readonly IdentifierNameSyntax ControllerTypeProviderType = SyntaxFactory.IdentifierName("Mvc.SourceGen.ISourceGenControllerTypeProvider");
-    public static readonly IdentifierNameSyntax ICriticalNotifyCompletionType = SyntaxFactory.IdentifierName("System.Runtime.CompilerServices.ICriticalNotifyCompletion");
-    public static readonly IdentifierNameSyntax INotifyCompletionType = SyntaxFactory.IdentifierName("System.Runtime.CompilerServices.INotifyCompletion");
-
-    public static readonly IdentifierNameSyntax ControllerActionInfoType = SyntaxFactory.IdentifierName("Mvc.SourceGen.ControllerActionInfo");
-    public static readonly ArrayTypeSyntax ControllerActionInfoArrayType = SyntaxFactory.ArrayType(ControllerActionInfoType)
-                                                                                       .AddRankSpecifiers(SyntaxFactory.ArrayRankSpecifier()
-                                                                                        .AddSizes(SyntaxFactory.OmittedArraySizeExpression()));
-
-    // variables
     public static readonly IdentifierNameSyntax TargetVariable = SyntaxFactory.IdentifierName("target");
     public static readonly IdentifierNameSyntax ParametersVariable = SyntaxFactory.IdentifierName("parameters");
     public static readonly IdentifierNameSyntax TypesVariable = SyntaxFactory.IdentifierName("_types");
@@ -27,8 +17,10 @@ internal class ControllerTypeProviderEmitter : IEmitter
     public static readonly IdentifierNameSyntax ControllerInfoVariable = SyntaxFactory.IdentifierName("controllerInfo");
 
     public void Emit(SourceProductionContext context, SourceGenerationSpec spec)
-    {// namespace Mvc.SourceGen ?? App namespace
+    {
+        // namespace Mvc.SourceGen ?? App namespace
         var declaration = SyntaxFactory.NamespaceDeclaration(WellKnownTypes.SourceGenNamespace)
+            .WithLeadingTrivia(SyntaxFactory.Trivia(SyntaxFactory.NullableDirectiveTrivia(SyntaxFactory.Token(SyntaxKind.EnableKeyword), true)))
             .WithUsings(SyntaxFactory.List(new UsingDirectiveSyntax[]
             {
                     // using System.Diagnostics.CodeAnalysis; 
@@ -36,8 +28,7 @@ internal class ControllerTypeProviderEmitter : IEmitter
                     // using System.Reflection;
                     SyntaxFactory.UsingDirective(SyntaxFactory.IdentifierName("System.Reflection"))
             }))
-            .WithLeadingTrivia(SyntaxFactory.Trivia(SyntaxFactory.NullableDirectiveTrivia(SyntaxFactory.Token(SyntaxKind.EnableKeyword), true)))
-            // internal partial class MvcSourceGenContext : ISourceGenControllerTypeProvider
+            // internal partial class MvcSourceGenContext : ISourceGenContext
             .WithSourceGenControllerTypeProviderContext(spec.ControllerTypes.Keys.ToArray());
 
         foreach (var controllerType in spec.ControllerTypes)
@@ -66,7 +57,7 @@ internal class ControllerTypeProviderEmitter : IEmitter
                             SyntaxFactory.AssignmentExpression(
                                 SyntaxKind.SimpleAssignmentExpression,
                                 SyntaxFactory.IdentifierName("_actions"),
-                                SyntaxFactory.ArrayCreationExpression(SyntaxFactory.ArrayType(ControllerActionInfoType))
+                                SyntaxFactory.ArrayCreationExpression(SyntaxFactory.ArrayType(WellKnownTypes.ControllerActionInfo))
                                 .AddTypeRankSpecifiers(SyntaxFactory.ArrayRankSpecifier().AddSizes(SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(actionMethods.Length)))))));
 
                 for (int i = 0; i < actionMethods.Length; i++)
@@ -171,7 +162,7 @@ internal class ControllerTypeProviderEmitter : IEmitter
                                             SyntaxFactory.InvocationExpression(
                                                 SyntaxFactory.MemberAccessExpression(
                                                     SyntaxKind.SimpleMemberAccessExpression,
-                                                    SyntaxFactory.ParenthesizedExpression(SyntaxFactory.CastExpression(INotifyCompletionType, TargetVariable)),
+                                                    SyntaxFactory.ParenthesizedExpression(SyntaxFactory.CastExpression(WellKnownTypes.INotifyCompletion, TargetVariable)),
                                                     SyntaxFactory.IdentifierName("OnCompleted")))
                                             .AddArgumentListArguments(SyntaxFactory.Argument(SyntaxFactory.IdentifierName("action"))))),
                                 // Action<object, Action>? unsafeOnCompletedMethod
@@ -183,7 +174,7 @@ internal class ControllerTypeProviderEmitter : IEmitter
                                             SyntaxFactory.InvocationExpression(
                                                 SyntaxFactory.MemberAccessExpression(
                                                     SyntaxKind.SimpleMemberAccessExpression,
-                                                    SyntaxFactory.ParenthesizedExpression(SyntaxFactory.CastExpression(ICriticalNotifyCompletionType, TargetVariable)),
+                                                    SyntaxFactory.ParenthesizedExpression(SyntaxFactory.CastExpression(WellKnownTypes.ICriticalNotifyCompletion, TargetVariable)),
                                                     SyntaxFactory.IdentifierName("UnsafeOnCompleted")))
                                             .AddArgumentListArguments(SyntaxFactory.Argument(SyntaxFactory.IdentifierName("action")))))
                             );
@@ -212,12 +203,12 @@ internal class ControllerTypeProviderEmitter : IEmitter
             declaration = declaration.AddMembers(
                  //file class TodoControllerModelProvider : ControllerInfo
                  SyntaxFactory.ClassDeclaration(controllerInfoName.Identifier)
-                    .AddBaseListTypes(SyntaxFactory.SimpleBaseType(SyntaxFactory.IdentifierName("ControllerInfo")))
+                    .AddBaseListTypes(SyntaxFactory.SimpleBaseType(WellKnownTypes.ControllerInfo))
                     .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)))
                     .AddMembers(
                         //private static readonly ControllerActionInfo[] _actions;
                         SyntaxFactory.FieldDeclaration(
-                            SyntaxFactory.VariableDeclaration(ControllerActionInfoArrayType)
+                            SyntaxFactory.VariableDeclaration(WellKnownTypes.ControllerActionInfoArray)
                             .AddVariables(SyntaxFactory.VariableDeclarator("_actions")))
                         .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PrivateKeyword), SyntaxFactory.Token(SyntaxKind.StaticKeyword), SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword))),
 
@@ -239,7 +230,7 @@ internal class ControllerTypeProviderEmitter : IEmitter
                                 .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)),
 
                         //public override ControllerActionInfo[] Actions { get; } = _actions;
-                        SyntaxFactory.PropertyDeclaration(ControllerActionInfoArrayType, "Actions")
+                        SyntaxFactory.PropertyDeclaration(WellKnownTypes.ControllerActionInfoArray, "Actions")
                             .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword), SyntaxFactory.Token(SyntaxKind.OverrideKeyword)))
                             //.AddAccessorListAccessors(SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)))
                             .WithExpressionBody(SyntaxFactory.ArrowExpressionClause(SyntaxFactory.IdentifierName("_actions")))
@@ -288,7 +279,7 @@ file static class ControllerTypeProviderExtensions
                     .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.InternalKeyword), SyntaxFactory.Token(SyntaxKind.PartialKeyword)))
                     .WithBaseList(SyntaxFactory.BaseList(SyntaxFactory.SeparatedList(new BaseTypeSyntax[]
                     {
-                            SyntaxFactory.SimpleBaseType(ControllerTypeProviderEmitter.ControllerTypeProviderType),
+                            SyntaxFactory.SimpleBaseType(WellKnownTypes.ISourceGenContext),
                     })))
                     // static MvcSourceGenContext()
                     .WithStaticConstructor(SyntaxFactory.Block(
@@ -372,7 +363,7 @@ file static class ControllerTypeProviderExtensions
             .AddParameterListParameters(
                 SyntaxFactory.Parameter(ControllerTypeProviderEmitter.ControllerTypeVariable.Identifier).WithType(SyntaxFactory.IdentifierName("System.Type")),
                 SyntaxFactory.Parameter(ControllerTypeProviderEmitter.ControllerInfoVariable.Identifier)
-                    .WithType(SyntaxFactory.NullableType(SyntaxFactory.IdentifierName("Mvc.SourceGen.ControllerInfo")))
+                    .WithType(SyntaxFactory.NullableType(WellKnownTypes.ControllerInfo))
                     .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.OutKeyword)))));
     }
 

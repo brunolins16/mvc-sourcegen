@@ -10,20 +10,12 @@ using System.Text;
 
 internal class ModelMetadataEmitter : IEmitter
 {
-    // types
-    public static readonly IdentifierNameSyntax ModelMetadataProviderType = SyntaxFactory.IdentifierName("Mvc.SourceGen.ISourceGenModelMetadataProvider");
-    public static readonly IdentifierNameSyntax IModelBinderType = SyntaxFactory.IdentifierName("IModelBinder");
-    public static readonly IdentifierNameSyntax ModelMetadataType = SyntaxFactory.IdentifierName("ModelMetadata");
-    public static readonly ArrayTypeSyntax ModelMetadataArrayType = SyntaxFactory.ArrayType(ModelMetadataType)
-                                                                                       .AddRankSpecifiers(SyntaxFactory.ArrayRankSpecifier()
-                                                                                        .AddSizes(SyntaxFactory.OmittedArraySizeExpression()));
-
     // variables
     public static readonly IdentifierNameSyntax ProviderVariable = SyntaxFactory.IdentifierName("provider");
     public static readonly IdentifierNameSyntax DetailsProviderVariable = SyntaxFactory.IdentifierName("detailsProvider");
     public static readonly IdentifierNameSyntax DetailsVariable = SyntaxFactory.IdentifierName("details");
     public static readonly IdentifierNameSyntax ModelBindingMessageProviderVariable = SyntaxFactory.IdentifierName("modelBindingMessageProvider");
-    public static readonly IdentifierNameSyntax ApplicationModelMetadataProviderVariable = SyntaxFactory.IdentifierName("applicationModelMetadataProvider");
+    public static readonly IdentifierNameSyntax SourceGenContextVariable = SyntaxFactory.IdentifierName("sourceGenContext");
     public static readonly IdentifierNameSyntax EntryVariable = SyntaxFactory.IdentifierName("entry");
     public static readonly IdentifierNameSyntax ModelMetadataVariable = SyntaxFactory.IdentifierName("modelMetadata");
 
@@ -63,12 +55,12 @@ internal class ModelMetadataEmitter : IEmitter
                     .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.FileKeyword)))
                     .WithBaseList(SyntaxFactory.BaseList(SyntaxFactory.SeparatedList(new BaseTypeSyntax[]
                     {
-                            SyntaxFactory.SimpleBaseType(SyntaxFactory.GenericName(ModelMetadataType.Identifier, SyntaxFactory.TypeArgumentList().AddArguments(SyntaxFactory.IdentifierName(modelType.Type.ToDisplayString()))))
+                            SyntaxFactory.SimpleBaseType(SyntaxFactory.GenericName(WellKnownTypes.DefaultModelMetadata.Identifier, SyntaxFactory.TypeArgumentList().AddArguments(SyntaxFactory.IdentifierName(modelType.Type.ToDisplayString()))))
                     })))
                     .WithMembers(SyntaxFactory.List(new MemberDeclarationSyntax[]
                     {
                             //public {name}(
-                            //  ISourceGenModelMetadataProvider applicationModelMetadataProvider,
+                            //  ISourceGenContext sourceGenContext,
                             //  IModelMetadataProvider provider,
                             //  ICompositeMetadataDetailsProvider detailsProvider,
                             //  DefaultMetadataDetails details,
@@ -76,15 +68,15 @@ internal class ModelMetadataEmitter : IEmitter
                             SyntaxFactory.ConstructorDeclaration(metadataType.Identifier)
                                 .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)))
                                 .AddParameterListParameters(
-                                    SyntaxFactory.Parameter(ApplicationModelMetadataProviderVariable.Identifier).WithType(ModelMetadataProviderType),
+                                    SyntaxFactory.Parameter(SourceGenContextVariable.Identifier).WithType(WellKnownTypes.ISourceGenContext),
                                     SyntaxFactory.Parameter(ProviderVariable.Identifier).WithType(SyntaxFactory.IdentifierName("IModelMetadataProvider")),
                                     SyntaxFactory.Parameter(DetailsProviderVariable.Identifier).WithType(SyntaxFactory.IdentifierName("ICompositeMetadataDetailsProvider")),
                                     SyntaxFactory.Parameter(DetailsVariable.Identifier).WithType(SyntaxFactory.IdentifierName("DefaultMetadataDetails")),
                                     SyntaxFactory.Parameter(ModelBindingMessageProviderVariable.Identifier).WithType(SyntaxFactory.IdentifierName("DefaultModelBindingMessageProvider"))
                                 )
-                                // : base(applicationModelMetadataProvider, provider, detailsProvider, details, modelBindingMessageProvider)
+                                // : base(sourceGenContext, provider, detailsProvider, details, modelBindingMessageProvider)
                                 .WithInitializer(SyntaxFactory.ConstructorInitializer(SyntaxKind.BaseConstructorInitializer).AddArgumentListArguments(
-                                    SyntaxFactory.Argument(ApplicationModelMetadataProviderVariable),
+                                    SyntaxFactory.Argument(SourceGenContextVariable),
                                     SyntaxFactory.Argument(ProviderVariable),
                                     SyntaxFactory.Argument(DetailsProviderVariable),
                                     SyntaxFactory.Argument(DetailsVariable),
@@ -101,6 +93,7 @@ internal class ModelMetadataEmitter : IEmitter
 
         // namespace Mvc.SourceGen ?? App namespace
         var declaration = SyntaxFactory.NamespaceDeclaration(WellKnownTypes.SourceGenNamespace)
+            .WithLeadingTrivia(SyntaxFactory.Trivia(SyntaxFactory.NullableDirectiveTrivia(SyntaxFactory.Token(SyntaxKind.EnableKeyword), true)))
             .WithUsings(SyntaxFactory.List(new UsingDirectiveSyntax[]
             {
                     // using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
@@ -110,7 +103,6 @@ internal class ModelMetadataEmitter : IEmitter
                     // using System.Diagnostics.CodeAnalysis; 
                     SyntaxFactory.UsingDirective(SyntaxFactory.IdentifierName("System.Diagnostics.CodeAnalysis"))
             }))
-            .WithLeadingTrivia(SyntaxFactory.Trivia(SyntaxFactory.NullableDirectiveTrivia(SyntaxFactory.Token(SyntaxKind.EnableKeyword), true)))
             .WithModelMetadataProviderContext(typeMapping)
             .AddMembers(classDeclarations);
 
@@ -174,12 +166,12 @@ file static class ModelMetadataSyntaxExtensions
                 ModelMetadataEmitter.ModelMetadataVariable,
                 SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression))));
 
-        // internal partial class MvcSourceGenContext : ISourceGenModelMetadataProvider
+        // internal partial class MvcSourceGenContext : ISourceGenContext
         return namespaceDeclarationSyntax.AddMembers(SyntaxFactory.ClassDeclaration(WellKnownTypes.MvcSourceGenContext.Identifier)
             .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.InternalKeyword), SyntaxFactory.Token(SyntaxKind.PartialKeyword)))
             .WithBaseList(SyntaxFactory.BaseList(SyntaxFactory.SeparatedList(new BaseTypeSyntax[]
             {
-                    SyntaxFactory.SimpleBaseType(ModelMetadataEmitter.ModelMetadataProviderType),
+                    SyntaxFactory.SimpleBaseType(WellKnownTypes.ISourceGenContext),
             })))
             .WithMembers(SyntaxFactory.List(new MemberDeclarationSyntax[]
             {
@@ -196,7 +188,7 @@ file static class ModelMetadataSyntaxExtensions
                             // DefaultModelBindingMessageProvider modelBindingMessageProvider
                             SyntaxFactory.Parameter(ModelMetadataEmitter.ModelBindingMessageProviderVariable.Identifier).WithType(SyntaxFactory.IdentifierName("DefaultModelBindingMessageProvider")),
                             //[NotNullWhen(true)] out ModelMetadata? modelMetadata
-                            SyntaxFactory.Parameter(SyntaxFactory.Identifier("modelMetadata"))
+                            SyntaxFactory.Parameter(ModelMetadataEmitter.ModelMetadataVariable.Identifier)
                                 .WithType(SyntaxFactory.IdentifierName("ModelMetadata?"))
                                 .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.OutKeyword)))
                         )
@@ -369,7 +361,7 @@ file static class ModelMetadataSyntaxExtensions
             SyntaxFactory.ReturnStatement(SyntaxFactory.ImplicitArrayCreationExpression(SyntaxFactory.InitializerExpression(SyntaxKind.ArrayInitializerExpression).AddExpressions(metadataInitializers))));
 
         //protected override ModelMetadata[] PropertiesInit()
-        return classDeclarationSyntax.AddMembers(SyntaxFactory.MethodDeclaration(ModelMetadataEmitter.ModelMetadataArrayType, "PropertiesInit")
+        return classDeclarationSyntax.AddMembers(SyntaxFactory.MethodDeclaration(WellKnownTypes.ModelMetadataArray, "PropertiesInit")
             .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ProtectedKeyword), SyntaxFactory.Token(SyntaxKind.OverrideKeyword)))
             .WithBody(methodBlock));
     }
@@ -432,7 +424,7 @@ file static class ModelMetadataSyntaxExtensions
         }
 
         //protected override ModelMetadata? CtorInit()
-        return classDeclarationSyntax.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.NullableType(ModelMetadataEmitter.ModelMetadataType), "CtorInit")
+        return classDeclarationSyntax.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.NullableType(WellKnownTypes.ModelMetadata), "CtorInit")
             .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ProtectedKeyword), SyntaxFactory.Token(SyntaxKind.OverrideKeyword)))
             .WithExpressionBody(
                 // => CtorInit(ctorParams, ctorInvoker)
@@ -539,7 +531,7 @@ file static class ModelMetadataSyntaxExtensions
         if (creator != null)
         {
             // protected virtual IModelBinder? CreateModelBinder(ModelBinderProviderContext context, ILoggerFactory loggerFactory, MvcOptions options) => new IModelBinder();
-            classDeclarationSyntax = classDeclarationSyntax.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.NullableType(ModelMetadataEmitter.IModelBinderType), "CreateModelBinder")
+            classDeclarationSyntax = classDeclarationSyntax.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.NullableType(WellKnownTypes.IModelBinder), "CreateModelBinder")
                 .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ProtectedKeyword), SyntaxFactory.Token(SyntaxKind.OverrideKeyword)))
                 .AddParameterListParameters(
                     SyntaxFactory.Parameter(SyntaxFactory.Identifier("context")).WithType(SyntaxFactory.IdentifierName("Microsoft.AspNetCore.Mvc.ModelBinding.ModelBinderProviderContext")),

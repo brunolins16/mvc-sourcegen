@@ -11,6 +11,8 @@ using System.Text;
 internal class MvcBuilderExtensionsEmitter : IEmitter
 {
     public static readonly IdentifierNameSyntax DINamespace = SyntaxFactory.IdentifierName("Microsoft.Extensions.DependencyInjection");
+
+    public static readonly IdentifierNameSyntax MvcSourceGenContextQualified = SyntaxFactory.IdentifierName("Mvc.SourceGen.MvcSourceGenContext");
     public static readonly IdentifierNameSyntax MvcBuilderType = SyntaxFactory.IdentifierName("IMvcBuilder");
     public static readonly IdentifierNameSyntax BuilderVariable = SyntaxFactory.IdentifierName("builder");
     public static readonly IdentifierNameSyntax ContextVariable = SyntaxFactory.IdentifierName("mvcSourceGenContext");
@@ -19,11 +21,6 @@ internal class MvcBuilderExtensionsEmitter : IEmitter
     {
         // namespace Microsoft.Extensions.DependencyInjection
         var declaration = SyntaxFactory.NamespaceDeclaration(DINamespace)
-            .WithUsings(SyntaxFactory.List(new UsingDirectiveSyntax[]
-            {
-                    //  using Mvc.SourceGen;
-                    SyntaxFactory.UsingDirective(WellKnownTypes.SourceGenNamespace)
-            }))
             .WithMembers(SyntaxFactory.List(new MemberDeclarationSyntax[]
             {
                     // internal static class SourceGenMvcBuilderExtensions
@@ -31,8 +28,8 @@ internal class MvcBuilderExtensionsEmitter : IEmitter
                         .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.InternalKeyword), SyntaxFactory.Token(SyntaxKind.StaticKeyword)))
                         .WithMembers(SyntaxFactory.List(new MemberDeclarationSyntax[]
                         {
-                            //public static IMvcBuilder AddSourceGeneratorProviders(this IMvcBuilder builder)
-                            SyntaxFactory.MethodDeclaration(MvcBuilderType, "AddSourceGeneratorProviders")
+                            //public static IMvcBuilder AddMvcContext(this IMvcBuilder builder)
+                            SyntaxFactory.MethodDeclaration(MvcBuilderType, "AddMvcContext")
                                 .AddParameterListParameters(
                                     SyntaxFactory.Parameter(BuilderVariable.Identifier)
                                         .WithType(MvcBuilderType)
@@ -42,33 +39,30 @@ internal class MvcBuilderExtensionsEmitter : IEmitter
                                 .WithBody(SyntaxFactory.Block(
                                     //var mvcSourceGenContext = new MvcSourceGenContext();
                                     SyntaxFactory.LocalDeclarationStatement(
-                                        SyntaxFactory.VariableDeclaration(WellKnownTypes.MvcSourceGenContext)
+                                        SyntaxFactory.VariableDeclaration(MvcSourceGenContextQualified)
                                             .AddVariables(
                                                 SyntaxFactory.VariableDeclarator(ContextVariable.Identifier)
                                                     .WithInitializer(SyntaxFactory.EqualsValueClause(SyntaxFactory.ImplicitObjectCreationExpression()))
                                             )
                                      ),
                                     
-                                    //  return builder.AddSourceGeneratorProviders
+                                    //  return builder.AddMvcContext
                                     SyntaxFactory.ReturnStatement(
                                         SyntaxFactory.InvocationExpression(
                                             SyntaxFactory.MemberAccessExpression(
                                                 SyntaxKind.SimpleMemberAccessExpression,
                                                 BuilderVariable,
-                                                SyntaxFactory.IdentifierName("AddSourceGeneratorProviders")
+                                                SyntaxFactory.IdentifierName("AddMvcContext")
                                             ))
                                         .WithArgumentList(SyntaxFactory.ArgumentList().AddArguments(
-                                            // ISourceGenControllerTypeProvider
-                                            SyntaxFactory.Argument(ContextVariable),
-                                            // ISourceGenModelMetadataProvider
-                                            SyntaxFactory.Argument(ContextVariable)
-                                         ))
+                                            // ISourceGenContext
+                                            SyntaxFactory.Argument(ContextVariable)))
                                 )))
                         }))
             }));
 
         context.AddSource(
-            "SourceGenMvcBuilderExtensions.g.cs",
+            "MvcSourceGenContext.IMvcBuilderExtensions.g.cs",
             declaration
             .NormalizeWhitespace()
             .GetText(encoding: Encoding.UTF8));
