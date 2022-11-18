@@ -20,6 +20,7 @@ public sealed partial class MvcGenerator
         private readonly Type _objectType;
         private readonly Type _ienumerableType;
         private readonly Type _icollectionType;
+        private readonly Type _fromServicesAttributeType;
         private readonly Type _nonControllerAttributeType;
         private readonly Type _controllerAttributeType;
         private readonly Type _apiControllerAttributeType;
@@ -33,6 +34,7 @@ public sealed partial class MvcGenerator
             _objectType = _metadataLoadContext.ResolveType<object>();
             _ienumerableType = _metadataLoadContext.ResolveType<IEnumerable>();
             _icollectionType = _metadataLoadContext.ResolveType<ICollection>();
+            _fromServicesAttributeType = _metadataLoadContext.ResolveType("Microsoft.AspNetCore.Mvc.FromServicesAttribute");
             _nonControllerAttributeType = _metadataLoadContext.ResolveType("Microsoft.AspNetCore.Mvc.NonControllerAttribute");
             _controllerAttributeType = _metadataLoadContext.ResolveType("Microsoft.AspNetCore.Mvc.ControllerAttribute");
             _apiControllerAttributeType = _metadataLoadContext.ResolveType("Microsoft.AspNetCore.Mvc.ApiControllerAttribute");
@@ -85,16 +87,30 @@ public sealed partial class MvcGenerator
 
                             foreach (var parameter in parameters)
                             {
+                                if (IsFromServices(parameter))
+                                {
+                                    continue;
+                                }
+
                                 void AddType(Type type)
                                 {
-                                    if (type.IsArray)
+                                    var symbol = type.GetTypeSymbol();
+                                    var modelSpec = new SourceGenerationModelSpec()
                                     {
-                                        AddType(type.GetElementType());
+                                        Type = symbol,
+                                        IsArray = type.IsArray,
+                                        IsCollection = _icollectionType.IsAssignableFrom(type),
+                                        IsIEnumerable = _ienumerableType.IsAssignableFrom(type)
+                                    };
+
+                                    if (modelTypes.Contains(modelSpec))
+                                    {
                                         return;
                                     }
 
-                                    if (type.GetTypeSymbol() is not INamedTypeSymbol symbol)
+                                    if (type.IsArray)
                                     {
+                                        AddType(type.GetElementType());
                                         return;
                                     }
 
@@ -110,14 +126,6 @@ public sealed partial class MvcGenerator
                                             AddType(genericType);
                                         }
                                     }
-
-                                    var modelSpec = new SourceGenerationModelSpec()
-                                    {
-                                        Type = symbol!,
-                                        IsArray = type.IsArray,
-                                        IsCollection = _icollectionType.IsAssignableFrom(type),
-                                        IsIEnumerable = _ienumerableType.IsAssignableFrom(type)
-                                    };
 
                                     _ = modelTypes.Add(modelSpec);
 
@@ -146,6 +154,12 @@ public sealed partial class MvcGenerator
             }
 
             return new SourceGenerationSpec() { ControllerTypes = controllerTypes, ModelTypes = modelTypes.ToArray() };
+        }
+
+        private bool IsFromServices(ParameterInfo parameter)
+        {
+            var attributes = parameter.GetCustomAttributesData();
+            return attributes.Any(t => t.AttributeType == _fromServicesAttributeType);
         }
 
         private bool IsAction(MethodInfo methodInfo)

@@ -8,7 +8,7 @@
 	
 	<PropertyGroup Label="PackageInfo">
 		<PackageDescription>MVC Source Generator</PackageDescription>
-		<PackageVersion>1.0.7</PackageVersion>
+		<PackageVersion>1.0.10</PackageVersion>
 		<Authors>Bruno Oliveira</Authors>
 		<IncludeBuildOutput>false</IncludeBuildOutput>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
