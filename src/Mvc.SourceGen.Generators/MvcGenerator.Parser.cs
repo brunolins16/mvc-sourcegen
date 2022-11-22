@@ -20,6 +20,8 @@ public sealed partial class MvcGenerator
         private readonly Type _objectType;
         private readonly Type _ienumerableType;
         private readonly Type _icollectionType;
+        private readonly Type _iFormatProviderType;
+        private readonly Type _enumType;
         private readonly Type _fromServicesAttributeType;
         private readonly Type _nonControllerAttributeType;
         private readonly Type _controllerAttributeType;
@@ -34,6 +36,8 @@ public sealed partial class MvcGenerator
             _objectType = _metadataLoadContext.ResolveType<object>();
             _ienumerableType = _metadataLoadContext.ResolveType<IEnumerable>();
             _icollectionType = _metadataLoadContext.ResolveType<ICollection>();
+            _iFormatProviderType = _metadataLoadContext.ResolveType<IFormatProvider>();
+            _enumType = _metadataLoadContext.ResolveType<Enum>();
             _fromServicesAttributeType = _metadataLoadContext.ResolveType("Microsoft.AspNetCore.Mvc.FromServicesAttribute");
             _nonControllerAttributeType = _metadataLoadContext.ResolveType("Microsoft.AspNetCore.Mvc.NonControllerAttribute");
             _controllerAttributeType = _metadataLoadContext.ResolveType("Microsoft.AspNetCore.Mvc.ControllerAttribute");
@@ -45,7 +49,7 @@ public sealed partial class MvcGenerator
         internal SourceGenerationSpec Parse(ImmutableArray<ClassDeclarationSyntax> candidateClassDeclarations)
         {
             var controllerTypes = new Dictionary<INamedTypeSymbol, SourceGenerationActionMethodSpec[]?>(SymbolEqualityComparer.Default);
-            var modelTypes = new HashSet<SourceGenerationModelSpec>(SourceGenerationModelSpecComparer.Default);
+            var modelTypes = new Dictionary<ITypeSymbol, SourceGenerationModelSpec>(SymbolEqualityComparer.Default);
 
             foreach (IGrouping<SyntaxTree, ClassDeclarationSyntax> group in candidateClassDeclarations.GroupBy(c => c.SyntaxTree))
             {
@@ -92,44 +96,40 @@ public sealed partial class MvcGenerator
                                     continue;
                                 }
 
-                                void AddType(Type type)
+                                void AddType(ITypeSymbol symbol)
                                 {
-                                    var symbol = type.GetTypeSymbol();
-                                    var modelSpec = new SourceGenerationModelSpec()
-                                    {
-                                        Type = symbol,
-                                        IsArray = type.IsArray,
-                                        IsCollection = _icollectionType.IsAssignableFrom(type),
-                                        IsIEnumerable = _ienumerableType.IsAssignableFrom(type)
-                                    };
+                                    var modelSpec = CreateModelSpec(symbol);
 
-                                    if (modelTypes.Contains(modelSpec))
+                                    if (modelTypes.TryGetValue(modelSpec.Type, out var existingModelSpec))
                                     {
+                                        if (modelSpec.OriginalType != null || existingModelSpec.OriginalType != null)
+                                        {
+                                            modelSpec.OriginalType ??= existingModelSpec.OriginalType;
+                                            modelTypes[modelSpec.Type] = modelSpec;
+                                        }
+
                                         return;
                                     }
+
+                                    var type = modelSpec.Type.AsType(_metadataLoadContext);
 
                                     if (type.IsArray)
                                     {
-                                        AddType(type.GetElementType());
+                                        AddType(type.GetElementType().GetTypeSymbol());
                                         return;
-                                    }
-
-                                    if (symbol!.IsReferenceType)
-                                    {
-                                        symbol = (symbol.WithNullableAnnotation(NullableAnnotation.None) as INamedTypeSymbol)!;
                                     }
 
                                     if (type.IsGenericType)
                                     {
                                         foreach (var genericType in type.GenericTypeArguments)
                                         {
-                                            AddType(genericType);
+                                            AddType(genericType.GetTypeSymbol());
                                         }
                                     }
 
-                                    _ = modelTypes.Add(modelSpec);
+                                    modelTypes[modelSpec.Type] = modelSpec;
 
-                                    if (type.IsPrimitive || symbol.SpecialType != SpecialType.None || modelSpec.IsIEnumerable || _icollectionType.IsAssignableFrom(type))
+                                    if (type.IsPrimitive || modelSpec.Type.SpecialType != SpecialType.None || modelSpec.IsIEnumerable || _icollectionType.IsAssignableFrom(type))
                                     {
                                         return;
                                     }
@@ -138,11 +138,11 @@ public sealed partial class MvcGenerator
                                     var properties = type.GetProperties();
                                     foreach (var property in properties)
                                     {
-                                        AddType(property.PropertyType);
+                                        AddType(property.PropertyType.GetTypeSymbol());
                                     }
                                 }
 
-                                AddType(parameter.ParameterType);
+                                AddType(parameter.ParameterType.GetTypeSymbol());
                             }
 
                         }
@@ -153,7 +153,37 @@ public sealed partial class MvcGenerator
                 }
             }
 
-            return new SourceGenerationSpec() { ControllerTypes = controllerTypes, ModelTypes = modelTypes.ToArray() };
+            return new SourceGenerationSpec() { ControllerTypes = controllerTypes, ModelTypes = modelTypes.Values.ToArray() };
+        }
+
+        private SourceGenerationModelSpec CreateModelSpec(ITypeSymbol symbol)
+        {
+            if (symbol.IsReferenceType)
+            {
+                // We don't need to diferentiate nullable reference types
+                symbol = (symbol.WithNullableAnnotation(NullableAnnotation.None) as INamedTypeSymbol)!;
+            }
+
+            var type = (symbol.SpecialType, symbol.OriginalDefinition.SpecialType) switch
+            {
+                (SpecialType.System_Nullable_T, _) => (symbol as INamedTypeSymbol)!.TypeArguments[0].AsType(_metadataLoadContext),
+                (SpecialType.None, SpecialType.System_Nullable_T) => (symbol as INamedTypeSymbol)!.TypeArguments[0].AsType(_metadataLoadContext),
+                (_, _) => symbol.AsType(_metadataLoadContext)
+            };
+
+            var hasTryParse = HasTryParseMethod(type, out var tryParseMethod);
+
+            return new SourceGenerationModelSpec()
+            {
+                Type = type.GetTypeSymbol(),
+                OriginalType = !type.GetTypeSymbol().Equals(symbol, SymbolEqualityComparer.IncludeNullability) ? symbol : null,
+                IsArray = type.IsArray,
+                IsCollection = _icollectionType.IsAssignableFrom(type),
+                IsIEnumerable = _ienumerableType.IsAssignableFrom(type),
+                IsEnum = type.IsEnum,
+                IsParsable = hasTryParse,
+                TryParseMethod = tryParseMethod.GetMethodSymbol()
+            };
         }
 
         private bool IsFromServices(ParameterInfo parameter)
@@ -263,5 +293,76 @@ public sealed partial class MvcGenerator
                 typeof(IDisposable).IsAssignableFrom(declaringType) &&
                  declaringType.GetInterfaceMap(typeof(IDisposable)).TargetMethods[0] == baseMethodInfo;
         }
+
+        private bool HasTryParseMethod(Type type, out MethodInfo? mi)
+        {
+            // TODO: Handle specific types (Uri, DateTime etc) with relevant options
+
+            mi = null;
+
+            if (type.IsEnum)
+            {
+                // Use Enum.TryParse<T>(string, bool, out T) for enums
+                mi = GetEnumTryParseMethod();
+            }
+
+            mi ??= GetStaticMethodFromHierarchy(type, "TryParse", new[] { typeof(string), type.MakeByRefType() }, m => m.ReturnType.Equals(typeof(bool)));
+
+            mi ??= GetStaticMethodFromHierarchy(type, "TryParse", new[] { typeof(string), _iFormatProviderType, type.MakeByRefType() }, m => m.ReturnType.Equals(typeof(bool)));
+
+            return mi != null;
+        }
+
+        private MethodInfo GetEnumTryParseMethod()
+        {
+            var tryParse = (from m in _enumType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                            let parameters = m.GetParameters()
+                            where parameters.Length == 3 && m.Name == "TryParse" && m.IsGenericMethod &&
+                                  parameters[0].ParameterType.Equals(typeof(string)) &&
+                                  parameters[1].ParameterType.Equals(typeof(bool))
+                            select m).FirstOrDefault();
+            return tryParse;
+        }
+
+        private MethodInfo GetStaticMethodFromHierarchy(Type type, string name, Type[] parameterTypes, Func<MethodInfo, bool> validateReturnType)
+        {
+            bool IsMatch(MethodInfo method) => method is not null && !method.IsAbstract && validateReturnType(method);
+
+            var methodInfo = type.GetMethod(name,
+                                            BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy,
+                                            binder: null,
+                                            types: parameterTypes,
+                                            modifiers: default);
+
+            if (IsMatch(methodInfo))
+            {
+                return methodInfo;
+            }
+
+            var candidateInterfaceMethodInfo = default(MethodInfo);
+
+            // Check all interfaces for implementations. Fail if there are duplicates.
+            foreach (var implementedInterface in type.GetInterfaces())
+            {
+                var interfaceMethod = implementedInterface.GetMethod(name,
+                    BindingFlags.Public | BindingFlags.Static,
+                    binder: null,
+                    types: parameterTypes,
+                    modifiers: default);
+
+                if (IsMatch(interfaceMethod))
+                {
+                    if (candidateInterfaceMethodInfo is not null)
+                    {
+                        return null;
+                    }
+
+                    candidateInterfaceMethodInfo = interfaceMethod;
+                }
+            }
+
+            return candidateInterfaceMethodInfo;
+        }
+
     }
 }

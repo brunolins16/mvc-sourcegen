@@ -16,6 +16,8 @@ internal static class WellKnownTypes
                                                                                        .AddRankSpecifiers(SyntaxFactory.ArrayRankSpecifier()
                                                                                         .AddSizes(SyntaxFactory.OmittedArraySizeExpression()));
 
+    public static readonly IdentifierNameSyntax ValuResultProvider = SyntaxFactory.IdentifierName("Microsoft.AspNetCore.Mvc.ModelBinding.ValueProviderResult");
+    public static readonly IdentifierNameSyntax ModelBindingContext = SyntaxFactory.IdentifierName("Microsoft.AspNetCore.Mvc.ModelBinding.ModelBindingContext");
     public static readonly IdentifierNameSyntax IModelBinder = SyntaxFactory.IdentifierName("Microsoft.AspNetCore.Mvc.ModelBinding.IModelBinder");
     public static readonly IdentifierNameSyntax DefaultModelMetadata = SyntaxFactory.IdentifierName("Microsoft.AspNetCore.Mvc.ModelBinding.Metadata.DefaultModelMetadata");
     public static readonly IdentifierNameSyntax ModelMetadata = SyntaxFactory.IdentifierName("Microsoft.AspNetCore.Mvc.ModelBinding.ModelMetadata");
@@ -25,6 +27,7 @@ internal static class WellKnownTypes
 
     // Runtime types
     public static readonly IdentifierNameSyntax Var = SyntaxFactory.IdentifierName("var");
+    public static readonly PredefinedTypeSyntax Object = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword));
     public static readonly IdentifierNameSyntax IEnumerable = SyntaxFactory.IdentifierName("System.Collections.Generic.IEnumerable");
     public static readonly IdentifierNameSyntax DynamicallyAccessedMemberTypes = SyntaxFactory.IdentifierName("System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes");
 
@@ -38,6 +41,7 @@ internal static class WellKnownTypes
 
     public static readonly IdentifierNameSyntax ICriticalNotifyCompletion = SyntaxFactory.IdentifierName("System.Runtime.CompilerServices.ICriticalNotifyCompletion");
     public static readonly IdentifierNameSyntax INotifyCompletion = SyntaxFactory.IdentifierName("System.Runtime.CompilerServices.INotifyCompletion");
+    public static readonly IdentifierNameSyntax FormatException = SyntaxFactory.IdentifierName("System.FormatException");
 
     // Types
     public static readonly IdentifierNameSyntax MvcSourceGenContext = SyntaxFactory.IdentifierName("MvcSourceGenContext");

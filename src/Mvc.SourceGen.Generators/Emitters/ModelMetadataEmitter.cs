@@ -10,15 +10,6 @@ using System.Text;
 
 internal class ModelMetadataEmitter : IEmitter
 {
-    // variables
-    public static readonly IdentifierNameSyntax ProviderVariable = SyntaxFactory.IdentifierName("provider");
-    public static readonly IdentifierNameSyntax DetailsProviderVariable = SyntaxFactory.IdentifierName("detailsProvider");
-    public static readonly IdentifierNameSyntax DetailsVariable = SyntaxFactory.IdentifierName("details");
-    public static readonly IdentifierNameSyntax ModelBindingMessageProviderVariable = SyntaxFactory.IdentifierName("modelBindingMessageProvider");
-    public static readonly IdentifierNameSyntax SourceGenContextVariable = SyntaxFactory.IdentifierName("sourceGenContext");
-    public static readonly IdentifierNameSyntax EntryVariable = SyntaxFactory.IdentifierName("entry");
-    public static readonly IdentifierNameSyntax ModelMetadataVariable = SyntaxFactory.IdentifierName("modelMetadata");
-
     public void Emit(SourceProductionContext context, SourceGenerationSpec spec)
     {
         // Includes all detected types + MvcSourceGenContext
@@ -51,6 +42,12 @@ internal class ModelMetadataEmitter : IEmitter
             }
 
             typeMapping[modelType.Type.ToDisplayString()] = metadataType;
+
+            if (modelType.OriginalType != null)
+            {
+                typeMapping[modelType.OriginalType.ToDisplayString()] = metadataType;
+            }
+
             classDeclarations[i] = SyntaxFactory.ClassDeclaration(metadataType.Identifier)
                     .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.FileKeyword)))
                     .WithBaseList(SyntaxFactory.BaseList(SyntaxFactory.SeparatedList(new BaseTypeSyntax[]
@@ -68,19 +65,19 @@ internal class ModelMetadataEmitter : IEmitter
                             SyntaxFactory.ConstructorDeclaration(metadataType.Identifier)
                                 .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)))
                                 .AddParameterListParameters(
-                                    SyntaxFactory.Parameter(SourceGenContextVariable.Identifier).WithType(WellKnownTypes.ISourceGenContext),
-                                    SyntaxFactory.Parameter(ProviderVariable.Identifier).WithType(SyntaxFactory.IdentifierName("IModelMetadataProvider")),
-                                    SyntaxFactory.Parameter(DetailsProviderVariable.Identifier).WithType(SyntaxFactory.IdentifierName("ICompositeMetadataDetailsProvider")),
-                                    SyntaxFactory.Parameter(DetailsVariable.Identifier).WithType(SyntaxFactory.IdentifierName("DefaultMetadataDetails")),
-                                    SyntaxFactory.Parameter(ModelBindingMessageProviderVariable.Identifier).WithType(SyntaxFactory.IdentifierName("DefaultModelBindingMessageProvider"))
+                                    SyntaxFactory.Parameter(KnownVariables.SourceGenContextVariable.Identifier).WithType(WellKnownTypes.ISourceGenContext),
+                                    SyntaxFactory.Parameter(KnownVariables.ProviderVariable.Identifier).WithType(SyntaxFactory.IdentifierName("IModelMetadataProvider")),
+                                    SyntaxFactory.Parameter(KnownVariables.DetailsProviderVariable.Identifier).WithType(SyntaxFactory.IdentifierName("ICompositeMetadataDetailsProvider")),
+                                    SyntaxFactory.Parameter(KnownVariables.DetailsVariable.Identifier).WithType(SyntaxFactory.IdentifierName("DefaultMetadataDetails")),
+                                    SyntaxFactory.Parameter(KnownVariables.ModelBindingMessageProviderVariable.Identifier).WithType(SyntaxFactory.IdentifierName("DefaultModelBindingMessageProvider"))
                                 )
                                 // : base(sourceGenContext, provider, detailsProvider, details, modelBindingMessageProvider)
                                 .WithInitializer(SyntaxFactory.ConstructorInitializer(SyntaxKind.BaseConstructorInitializer).AddArgumentListArguments(
-                                    SyntaxFactory.Argument(SourceGenContextVariable),
-                                    SyntaxFactory.Argument(ProviderVariable),
-                                    SyntaxFactory.Argument(DetailsProviderVariable),
-                                    SyntaxFactory.Argument(DetailsVariable),
-                                    SyntaxFactory.Argument(ModelBindingMessageProviderVariable)
+                                    SyntaxFactory.Argument(KnownVariables.SourceGenContextVariable),
+                                    SyntaxFactory.Argument(KnownVariables.ProviderVariable),
+                                    SyntaxFactory.Argument(KnownVariables.DetailsProviderVariable),
+                                    SyntaxFactory.Argument(KnownVariables.DetailsVariable),
+                                    SyntaxFactory.Argument(KnownVariables.ModelBindingMessageProviderVariable)
                                     ))
                                 // {}
                                 .WithBody(SyntaxFactory.Block()),
@@ -114,7 +111,20 @@ internal class ModelMetadataEmitter : IEmitter
     }
 }
 
-file static class ModelMetadataSyntaxExtensions
+file static class KnownVariables
+{
+    public static readonly IdentifierNameSyntax ProviderVariable = SyntaxFactory.IdentifierName("provider");
+    public static readonly IdentifierNameSyntax DetailsVariable = SyntaxFactory.IdentifierName("details");
+    public static readonly IdentifierNameSyntax ModelBindingMessageProviderVariable = SyntaxFactory.IdentifierName("modelBindingMessageProvider");
+    public static readonly IdentifierNameSyntax SourceGenContextVariable = SyntaxFactory.IdentifierName("sourceGenContext");
+    public static readonly IdentifierNameSyntax DetailsProviderVariable = SyntaxFactory.IdentifierName("detailsProvider");
+    public static readonly IdentifierNameSyntax EntryVariable = SyntaxFactory.IdentifierName("entry");
+    public static readonly IdentifierNameSyntax ModelMetadataVariable = SyntaxFactory.IdentifierName("modelMetadata");
+    public static readonly IdentifierNameSyntax ModelVariable = SyntaxFactory.IdentifierName("model");
+    public static readonly IdentifierNameSyntax ContextVariable = SyntaxFactory.IdentifierName("context");
+}
+
+file static class SyntaxFactoryExtensions
 {
     public static NamespaceDeclarationSyntax WithModelMetadataProviderContext(this NamespaceDeclarationSyntax namespaceDeclarationSyntax, Dictionary<string, IdentifierNameSyntax> typeMapping)
     {
@@ -124,7 +134,7 @@ file static class ModelMetadataSyntaxExtensions
                 SyntaxFactory.ExpressionStatement(
                     SyntaxFactory.AssignmentExpression(
                         SyntaxKind.SimpleAssignmentExpression,
-                        ModelMetadataEmitter.ModelMetadataVariable,
+                        KnownVariables.ModelMetadataVariable,
                         SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression)))
             };
         foreach (var item in typeMapping)
@@ -137,7 +147,7 @@ file static class ModelMetadataSyntaxExtensions
                             SyntaxKind.SimpleMemberAccessExpression,
                             SyntaxFactory.MemberAccessExpression(
                                 SyntaxKind.SimpleMemberAccessExpression,
-                                ModelMetadataEmitter.EntryVariable,
+                                KnownVariables.EntryVariable,
                                 SyntaxFactory.IdentifierName("Key")
                                 ),
                             SyntaxFactory.IdentifierName("ModelType")
@@ -146,14 +156,14 @@ file static class ModelMetadataSyntaxExtensions
                     SyntaxFactory.ExpressionStatement(
                         SyntaxFactory.AssignmentExpression(
                             SyntaxKind.SimpleAssignmentExpression,
-                            ModelMetadataEmitter.ModelMetadataVariable,
+                            KnownVariables.ModelMetadataVariable,
                             SyntaxFactory.ObjectCreationExpression(item.Value)
                             .AddArgumentListArguments(
                                 SyntaxFactory.Argument(SyntaxFactory.ThisExpression()),
-                                SyntaxFactory.Argument(ModelMetadataEmitter.ProviderVariable),
-                                SyntaxFactory.Argument(ModelMetadataEmitter.DetailsProviderVariable),
-                                SyntaxFactory.Argument(ModelMetadataEmitter.EntryVariable),
-                                SyntaxFactory.Argument(ModelMetadataEmitter.ModelBindingMessageProviderVariable)
+                                SyntaxFactory.Argument(KnownVariables.ProviderVariable),
+                                SyntaxFactory.Argument(KnownVariables.DetailsProviderVariable),
+                                SyntaxFactory.Argument(KnownVariables.EntryVariable),
+                                SyntaxFactory.Argument(KnownVariables.ModelBindingMessageProviderVariable)
                                 )
                             ))
                     ));
@@ -163,7 +173,7 @@ file static class ModelMetadataSyntaxExtensions
         expressions.Add(SyntaxFactory.ReturnStatement(
             SyntaxFactory.BinaryExpression(
                 SyntaxKind.NotEqualsExpression,
-                ModelMetadataEmitter.ModelMetadataVariable,
+                KnownVariables.ModelMetadataVariable,
                 SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression))));
 
         // internal partial class MvcSourceGenContext : ISourceGenContext
@@ -180,15 +190,15 @@ file static class ModelMetadataSyntaxExtensions
                         .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)))
                         .AddParameterListParameters(
                             // DefaultMetadataDetails entry
-                            SyntaxFactory.Parameter(ModelMetadataEmitter.EntryVariable.Identifier).WithType(SyntaxFactory.IdentifierName("DefaultMetadataDetails")),
+                            SyntaxFactory.Parameter(KnownVariables.EntryVariable.Identifier).WithType(SyntaxFactory.IdentifierName("DefaultMetadataDetails")),
                             // IModelMetadataProvider provider
-                            SyntaxFactory.Parameter(ModelMetadataEmitter.ProviderVariable.Identifier).WithType(SyntaxFactory.IdentifierName("IModelMetadataProvider")),
+                            SyntaxFactory.Parameter(KnownVariables.ProviderVariable.Identifier).WithType(SyntaxFactory.IdentifierName("IModelMetadataProvider")),
                             // ICompositeMetadataDetailsProvider detailsProvider
-                            SyntaxFactory.Parameter(ModelMetadataEmitter.DetailsProviderVariable.Identifier).WithType(SyntaxFactory.IdentifierName("ICompositeMetadataDetailsProvider")),
+                            SyntaxFactory.Parameter(KnownVariables.DetailsProviderVariable.Identifier).WithType(SyntaxFactory.IdentifierName("ICompositeMetadataDetailsProvider")),
                             // DefaultModelBindingMessageProvider modelBindingMessageProvider
-                            SyntaxFactory.Parameter(ModelMetadataEmitter.ModelBindingMessageProviderVariable.Identifier).WithType(SyntaxFactory.IdentifierName("DefaultModelBindingMessageProvider")),
+                            SyntaxFactory.Parameter(KnownVariables.ModelBindingMessageProviderVariable.Identifier).WithType(SyntaxFactory.IdentifierName("DefaultModelBindingMessageProvider")),
                             //[NotNullWhen(true)] out ModelMetadata? modelMetadata
-                            SyntaxFactory.Parameter(ModelMetadataEmitter.ModelMetadataVariable.Identifier)
+                            SyntaxFactory.Parameter(KnownVariables.ModelMetadataVariable.Identifier)
                                 .WithType(SyntaxFactory.IdentifierName("ModelMetadata?"))
                                 .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.OutKeyword)))
                         )
@@ -248,7 +258,7 @@ file static class ModelMetadataSyntaxExtensions
                     SyntaxFactory.Parameter(SyntaxFactory.Identifier("obj")),
                     SyntaxFactory.Parameter(SyntaxFactory.Identifier("value")))
                 .WithExpressionBody(
-                    properties[i].IsReadOnly || properties[i].SetMethod.IsInitOnly ?
+                    properties[i].IsReadOnly || properties[i].SetMethod!.IsInitOnly ?
                          // => throw new InvalidOperationException
                          SyntaxFactory.ThrowExpression(SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName("InvalidOperationException"))
                             .AddArgumentListArguments(
@@ -446,6 +456,8 @@ file static class ModelMetadataSyntaxExtensions
 
     }
 
+    private enum Test { Test1, Test2 }
+
     public static ClassDeclarationSyntax WithGetBinderMethod(this ClassDeclarationSyntax classDeclarationSyntax, SourceGenerationModelSpec modelType)
     {
         if (modelType.Type.SpecialType == SpecialType.System_String)
@@ -455,6 +467,109 @@ file static class ModelMetadataSyntaxExtensions
 
         ExpressionSyntax? creator = null;
 
+        if (modelType.IsParsable)
+        {
+            var tryParseInvocation = SyntaxFactory.InvocationExpression(
+                SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, 
+                SyntaxFactory.IdentifierName(modelType.TryParseMethod!.ContainingType.ToDisplayString()), SyntaxFactory.IdentifierName("TryParse")))
+                .AddArgumentListArguments(SyntaxFactory.Argument(SyntaxFactory.IdentifierName("tempSourceString")));
+
+            tryParseInvocation = (modelType.IsEnum, modelType.TryParseMethod!.Parameters.Length) switch
+            {
+                // (Enum.TryParse(tempSourceString,***** true ******, out [modelType] parsedValue))
+                (true, _) =>  tryParseInvocation.AddArgumentListArguments(SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression))),
+                // ([modeltype].TryParse(tempSourceString, **** valueProviderResult.Culture *****, out [modelType] parsedValue))
+                (false, 3) => tryParseInvocation.AddArgumentListArguments(
+                    SyntaxFactory.Argument(SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, KnownVariables.ProviderVariable, SyntaxFactory.IdentifierName("Culture")))),
+                _ => tryParseInvocation
+            };
+
+            //  *****out [modelType] parsedValue******
+            tryParseInvocation = tryParseInvocation.AddArgumentListArguments(
+                SyntaxFactory.Argument(
+                    null, 
+                    SyntaxFactory.Token(SyntaxKind.OutKeyword), 
+                    SyntaxFactory.DeclarationExpression(
+                        SyntaxFactory.IdentifierName(modelType.Type.ToDisplayString()),
+                        SyntaxFactory.SingleVariableDesignation(SyntaxFactory.Identifier("parsedValue"))))
+            );
+
+            // private object? ParseOperation(ValueProviderResult provider, ModelBindingContext context)
+            classDeclarationSyntax = classDeclarationSyntax.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.NullableType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword))), "ParseOperation")
+                .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PrivateKeyword)))
+                .AddParameterListParameters(
+                    SyntaxFactory.Parameter(KnownVariables.ProviderVariable.Identifier).WithType(WellKnownTypes.ValuResultProvider),
+                    SyntaxFactory.Parameter(KnownVariables.ContextVariable.Identifier).WithType(WellKnownTypes.ModelBindingContext))
+                .WithBody(SyntaxFactory.Block(
+
+                    // var tempSourceString = provider.FirstValue;
+                    SyntaxFactory.LocalDeclarationStatement(SyntaxFactory.VariableDeclaration(WellKnownTypes.Var).AddVariables(
+                        SyntaxFactory.VariableDeclarator("tempSourceString")
+                        .WithInitializer(
+                            SyntaxFactory.EqualsValueClause(SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,KnownVariables.ProviderVariable,SyntaxFactory.IdentifierName("FirstValue"))))
+                        )),
+
+                    // object? model = null;
+                    SyntaxFactory.LocalDeclarationStatement(SyntaxFactory.VariableDeclaration(SyntaxFactory.NullableType(WellKnownTypes.Object)).AddVariables(
+                        SyntaxFactory.VariableDeclarator(KnownVariables.ModelVariable.Identifier)
+                        .WithInitializer(
+                            SyntaxFactory.EqualsValueClause(SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression)))
+                        )),
+
+                    // if ([modeltype].TryParse(tempSourceString, [valueProviderResult.Culture,] out [modelType] parsedValue))
+                    SyntaxFactory.IfStatement(tryParseInvocation, SyntaxFactory.Block(
+                        // model = (object)parsedValue;
+                        SyntaxFactory.ExpressionStatement(
+                            SyntaxFactory.AssignmentExpression(
+                                SyntaxKind.SimpleAssignmentExpression, 
+                                KnownVariables.ModelVariable, 
+                                SyntaxFactory.CastExpression(WellKnownTypes.Object, SyntaxFactory.IdentifierName("parsedValue"))
+                            )),
+
+                        // context.Result = ModelBindingResult.Success(model);
+                        SyntaxFactory.ExpressionStatement(
+                            SyntaxFactory.AssignmentExpression(
+                                SyntaxKind.SimpleAssignmentExpression,
+                                SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, KnownVariables.ContextVariable, SyntaxFactory.IdentifierName("Result")),
+                                SyntaxFactory.InvocationExpression(
+                                    SyntaxFactory.MemberAccessExpression(
+                                        SyntaxKind.SimpleMemberAccessExpression, 
+                                        SyntaxFactory.IdentifierName("ModelBindingResult"), 
+                                        SyntaxFactory.IdentifierName("Success"))
+                                    ).AddArgumentListArguments(SyntaxFactory.Argument(KnownVariables.ModelVariable))
+                            ))
+                        ))
+                    .WithElse(SyntaxFactory.ElseClause(SyntaxFactory.Block(
+                        SyntaxFactory.ExpressionStatement(
+                            // context.ModelState.TryAddModelError(context.ModelName, new FormatException(), context.ModelMetadata);
+                            SyntaxFactory.InvocationExpression(
+                                SyntaxFactory.MemberAccessExpression(
+                                    SyntaxKind.SimpleMemberAccessExpression,
+                                    SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, KnownVariables.ContextVariable, SyntaxFactory.IdentifierName("ModelState")),
+                                    SyntaxFactory.IdentifierName("TryAddModelError")
+                                    ))
+                            .AddArgumentListArguments(
+                                //context.ModelName
+                                SyntaxFactory.Argument(SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, KnownVariables.ContextVariable, SyntaxFactory.IdentifierName("ModelName"))),
+                                //new FormatException()
+                                SyntaxFactory.Argument(SyntaxFactory.ObjectCreationExpression(WellKnownTypes.FormatException, SyntaxFactory.ArgumentList(), null)),
+                                //context.ModelMetadata
+                                SyntaxFactory.Argument(SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, KnownVariables.ContextVariable, SyntaxFactory.IdentifierName("ModelMetadata")))
+                            )
+                     )))),
+
+                    // return model;
+                    SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName("model"))))
+                );
+
+            // TryParseModelBinder
+            // public TryParseModelBinder(Func<ValueProviderResult, ModelBindingContext, object?> tryParseOperation, ILoggerFactory loggerFactory)
+            creator = SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName("Microsoft.AspNetCore.Mvc.ModelBinding.Binders.TryParseModelBinder"))
+                .AddArgumentListArguments(
+                    SyntaxFactory.Argument(SyntaxFactory.IdentifierName("ParseOperation")),
+                    SyntaxFactory.Argument(SyntaxFactory.IdentifierName("loggerFactory"))
+                );
+        }
         if (modelType.IsArray && modelType.Type is IArrayTypeSymbol arrayTypeSymbol && arrayTypeSymbol.ElementType != null)
         {
             // context.CreateBinder(context.Metadata.ElementMetadata)
@@ -477,7 +592,7 @@ file static class ModelMetadataSyntaxExtensions
                 );
 
             // ArrayModelBinder<T>
-            //public ArrayModelBinder(IModelBinder elementBinder, ILoggerFactory loggerFactory, bool allowValidatingTopLevelNodes, MvcOptions mvcOptions)
+            // public ArrayModelBinder(IModelBinder elementBinder, ILoggerFactory loggerFactory, bool allowValidatingTopLevelNodes, MvcOptions mvcOptions)
             creator = SyntaxFactory.ObjectCreationExpression(SyntaxFactory.GenericName(SyntaxFactory.Identifier("Microsoft.AspNetCore.Mvc.ModelBinding.Binders.ArrayModelBinder"), SyntaxFactory.TypeArgumentList().AddArguments(SyntaxFactory.IdentifierName(arrayTypeSymbol.ElementType.ToDisplayString()))))
                 .AddArgumentListArguments(
                     SyntaxFactory.Argument(elementBinder),
@@ -524,7 +639,6 @@ file static class ModelMetadataSyntaxExtensions
                     SyntaxFactory.Argument(SyntaxFactory.IdentifierName("options"))
                 );
         }
-        //TODO: TryParse
         //TODO: IsDictionary
         //TODO: IsKeyValuePair
 
@@ -572,9 +686,10 @@ file static class ModelMetadataSyntaxExtensions
 
         return null;
     }
+
     private static IPropertySymbol[] GetProperties(ITypeSymbol modelType)
     {
-        List<IPropertySymbol> properties = default;
+        List<IPropertySymbol> properties = default!;
         foreach (var t in modelType.BaseTypes())
         {
             foreach (var symbol in t.GetMembers().OfType<IPropertySymbol>())

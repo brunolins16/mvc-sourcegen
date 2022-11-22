@@ -8,7 +8,7 @@
 	
 	<PropertyGroup Label="PackageInfo">
 		<PackageDescription>MVC Source Generator</PackageDescription>
-		<PackageVersion>1.0.10</PackageVersion>
+		<PackageVersion>0.0.5-alpha</PackageVersion>
 		<Authors>Bruno Oliveira</Authors>
 		<IncludeBuildOutput>false</IncludeBuildOutput>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -17,13 +17,17 @@
 	<ItemGroup>
 	  <Compile Include="..\..\ext-libs\Roslyn.Reflection\*.cs" LinkBase="Reflection" />
 	</ItemGroup>
-
+	
 	<ItemGroup>
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.4.0-4.final" PrivateAssets="all" />
 		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.3">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="bin\Debug\netstandard2.0\\Mvc.SourceGen.Generators.dll" />
 	</ItemGroup>
 
 	<ItemGroup>
